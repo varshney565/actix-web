@@ -24,7 +24,7 @@ use dotenv;
 async fn main() -> std::io::Result<()> {
     let environment = env::var("ENV").unwrap_or_else(|_| "dev".to_string());
     if environment == "dev" {
-        dotenv::from_filename("node1.env").ok();
+        dotenv::from_filename("node0.env").ok();
     }
     let port = env::var("PORT").expect("Failed to load the Port !!");
     add_node("192.168.178.32:8081".to_string());

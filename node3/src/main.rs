@@ -27,11 +27,11 @@ async fn main() -> std::io::Result<()> {
         dotenv::from_filename("node3.env").ok();
     }
     let port = env::var("PORT").expect("Failed to load the Port !!");
-    add_node("172.16.14.113:8081".to_string());
-    add_node("172.16.14.113:8080".to_string());
-    add_node("172.16.14.113:8082".to_string());
-    add_node("172.16.14.113:8083".to_string());
-    add_node("172.16.14.113:8084".to_string());
+    add_node("192.168.178.32:8081".to_string());
+    add_node("192.168.178.32:8080".to_string());
+    add_node("192.168.178.32:8082".to_string());
+    add_node("192.168.178.32:8083".to_string());
+    add_node("192.168.178.32:8084".to_string());
     HttpServer::new(|| 
         App::new()
                 .route("/proposal", web::post().to(index))
