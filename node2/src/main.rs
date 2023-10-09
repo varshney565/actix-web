@@ -12,7 +12,7 @@ use controller::receive_signal::receive_signal;
 
 use controller::health::health_check;
 
-use controller::vote::vote;
+use controller::receive_vote::vote;
 
 use utils::ips::add_node;
 

@@ -8,4 +8,8 @@ pub mod send_proposal;
 
 pub mod receive_signal;
 
-pub mod vote;
+pub mod receive_vote;
+
+pub mod brodcast_vote;
+
+pub mod vote_result;

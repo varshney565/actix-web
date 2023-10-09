@@ -1,12 +1,10 @@
 use actix_web::web;
 
-use crate::utils::metadata::PROPOSALS;
+use crate::utils::metadata::{PROPOSALS, ACTIVE_NODES};
 
-use crate::utils::{metadata::{Proposal, NODES}, ips::REMOTE_ADDRESS};
+use crate::utils::{metadata::{Proposal, STATE}, ips::REMOTE_ADDRESS};
 
 use std::{env, sync::Arc};
-
-use parking_lot::Mutex;
 
 use futures::future::join_all;
 
@@ -35,24 +33,29 @@ pub async fn send_proposal(proposal : &web::Json<Proposal>, client_add : String)
      * */
     let mut futures = Vec::new();
     let remote = REMOTE_ADDRESS.lock();
-    let active_nodes = Arc::new(Mutex::new(Vec::new()));
     for add in &*remote {
         let _add = format!("{}",add);
         if _add == this_ip {
             continue;
         }
         let url = format!("http://{}/running", add.clone());
-        let active_nodes_clone = Arc::clone(&active_nodes);
+        let active_nodes_clone = Arc::clone(&ACTIVE_NODES);
         let future = async move {
             let _res = reqwest::Client::builder()
-                .timeout(std::time::Duration::from_millis(100)) // Set a timeout of 5 seconds
+                .timeout(std::time::Duration::from_millis(500)) // Set a timeout of 500 mili-seconds
                 .build()
                 .unwrap()
                 .head(&url)
                 .send()
                 .await?;
             let mut active_nodes = active_nodes_clone.lock();
-            active_nodes.push(_add.clone());
+            if let Some(pending_active_nodes) =  active_nodes.get_mut(&proposal.0.id) {
+                pending_active_nodes.push(_add.clone());
+            }else {
+                let mut new_active_nodes = Vec::new();
+                new_active_nodes.push(_add.clone());
+                active_nodes.insert(proposal.0.id, new_active_nodes);
+            }
             drop(active_nodes);
             Result::<(), reqwest::Error>::Ok(())
         };
@@ -65,20 +68,22 @@ pub async fn send_proposal(proposal : &web::Json<Proposal>, client_add : String)
      * now set the active_nodes, max_faulty_node and brodcast status locally.
      * */
     
-    let _active_nodes = active_nodes.lock();
-    let n = _active_nodes.len();
-    let f = (n as i64 )/3;
-    println!("{},{}",n,f);
-    println!("{:?}",_active_nodes);
+    let _active_nodes = ACTIVE_NODES.lock();
+    let _active_nodes_ = _active_nodes.get(&proposal.0.id).unwrap_or(&Vec::new()).clone();
+    let n = _active_nodes_.len();
+    let f = (n as i64)/3;
+    println!("{:?}",_active_nodes_);
     drop(_active_nodes);
-    let mut nodes = NODES.lock();
-    nodes.insert(proposal.0.id, (n as i64 + 1, f, false));
-    drop(nodes);
+    let mut state = STATE.lock();
+    state.insert(proposal.0.id, (n as i64 + 1, f, false,false));
+    drop(state);
     
     /*
-     * now iterate on all the active nodes and iterate on them  
+     * now iterate on all the active nodes and send the proposal  
      * */
-    let _active_nodes = active_nodes.lock();
+    let _active_nodes_ = ACTIVE_NODES.lock();
+    let _active_nodes = _active_nodes_.get(&proposal.0.id).unwrap_or(&Vec::new()).clone();
+    drop(_active_nodes_);
     let mut futures = Vec::new(); 
     for _add in &*_active_nodes {
         let add = _add.clone();
@@ -102,9 +107,7 @@ pub async fn send_proposal(proposal : &web::Json<Proposal>, client_add : String)
         };
         futures.push(future);
     }
-    drop(_active_nodes);
     join_all(futures).await;
-
     /*
      * Everything is perfect.
      */
