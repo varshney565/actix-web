@@ -13,11 +13,11 @@ async fn main() -> std::io::Result<()> {
         dotenv::from_filename("client.env").ok();
     }
     let port = env::var("PORT").expect("Failed to load the Port !!");
-    add_node("172.16.14.113:8080");
-    add_node("172.16.14.113:8081");
-    add_node("172.16.14.113:8082");
-    add_node("172.16.14.113:8083");
-    add_node("172.16.14.113:8084");
+    add_node("192.168.178.32:8081");
+    add_node("192.168.178.32:8080");
+    add_node("192.168.178.32:8082");
+    add_node("192.168.178.32:8083");
+    add_node("192.168.178.32:8084");
     HttpServer::new(||
         App::new()
             .route("/proposal",web::post().to(index))

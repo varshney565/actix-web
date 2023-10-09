@@ -18,6 +18,15 @@ pub struct Vote {
     pub vote : i8
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Reply {
+    pub from : String,
+    pub vote : i8,
+    pub id : i64,
+    pub f : i64,
+    pub total : i64
+}
+
 impl PartialEq for Proposal {
     fn eq(&self, other: &Self) -> bool {
         // Implement your custom comparison logic here

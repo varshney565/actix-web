@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use actix_web::{HttpResponse, web, HttpRequest};
 
-use crate::utils::metadata::{VOTES, Vote, STATE};
+use crate::utils::metadata::{VOTES, Vote, STATE, Reply};
 
 use std::env;
 
@@ -36,12 +36,10 @@ pub async fn vote(vote : web::Json<Vote>, req : HttpRequest) -> HttpResponse {
         let mut state = STATE.lock();
         if let Some(_state) = state.get_mut(&id) {
             if _state.3 == false && n as i64 >= 2*_state.1 + 1 {
+                let f = _state.1;
+                let total = _state.0;
                 _state.3 = true;
                 drop(state);
-                /*
-                 * reply to the client
-                 * */
-
                 /*
                 * find the ip of the current machine.
                 */
@@ -58,11 +56,17 @@ pub async fn vote(vote : web::Json<Vote>, req : HttpRequest) -> HttpResponse {
                         client_add = caller_ip.to_string();
                     }
                 }
-                let _reply = Vote {
-                    id : vote.0.id,
-                    ip : this_ip.clone(),
-                    vote : 1
+
+                /*
+                 * Reply-body to the client.
+                 */
+                let _reply = Reply {
+                    id : vote.0.id, from : this_ip.clone(), vote : 1, f, total
                 };
+
+                /*
+                 * Replying to the client started.
+                 * */
                 println!("Replying to the client !!");
                 let url = format!("http://{}/reply", client_add.clone());
                 let json_data = serde_json::to_string(&_reply).expect("Error while serializing");
